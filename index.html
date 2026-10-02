@@ -10,7 +10,7 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="apple-touch-icon" href="icon.svg">
   <link rel="icon" href="icon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="style.css?v=1">
+  <link rel="stylesheet" href="style.css?v=2">
 </head>
 <body>
 <div id="auth" class="auth">
@@ -99,6 +99,7 @@
       <div class="tabs">
         <button class="tab active" data-tab="peoplePane">Persone</button>
         <button class="tab" data-tab="motivationsPane">Motivazioni</button>
+        <button class="tab" data-tab="closuresPane">Chiusure</button>
       </div>
       <div id="peoplePane" class="pane active">
         <form id="personForm" class="panel compact">
@@ -108,6 +109,18 @@
         </form>
         <div class="hint">Puoi gestire fino a 5 persone.</div>
         <div id="peopleList"></div>
+      </div>
+      <div id="closuresPane" class="pane">
+        <form id="closureForm" class="panel compact">
+          <label>Nome chiusura<input id="closureName" maxlength="100" required placeholder="Es. Vacanze di Natale"></label>
+          <div class="two">
+            <label>Dal<input id="closureFrom" type="date" required></label>
+            <label>Al<input id="closureTo" type="date" required></label>
+          </div>
+          <button class="primary" type="submit">Aggiungi chiusura</button>
+        </form>
+        <div class="hint">Gli eventi ricorrenti compresi nel periodo vengono saltati automaticamente. Gli eventi singoli restano disponibili.</div>
+        <div id="closuresList"></div>
       </div>
       <div id="motivationsPane" class="pane">
         <form id="motivationForm" class="panel compact">
@@ -133,6 +146,6 @@
 <div id="toast" class="toast"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="app.js?v=1"></script>
+<script src="app.js?v=2"></script>
 </body>
 </html>
