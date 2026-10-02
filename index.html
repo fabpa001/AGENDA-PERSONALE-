@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#f5c84c">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <title>Agenda</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="icon.svg">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="style.css?v=1">
+</head>
+<body>
+<div id="auth" class="auth">
+  <div class="loginCard">
+    <div class="brandMark">✓</div>
+    <h1>La mia Agenda</h1>
+    <p class="muted">Un solo posto per gli impegni di tutti.</p>
+    <form id="loginForm">
+      <label>Email<input id="email" type="email" autocomplete="email" required></label>
+      <label>Password<input id="password" type="password" autocomplete="current-password" minlength="6" required></label>
+      <button class="primary" type="submit">Entra</button>
+    </form>
+    <button id="firstAccess" class="linkBtn" type="button">Primo accesso</button>
+    <div id="authMsg" class="msg"></div>
+  </div>
+</div>
+
+<div id="app" class="app hidden">
+  <header>
+    <div>
+      <div class="eyebrow">AGENDA</div>
+      <h1 id="pageTitle">Oggi</h1>
+    </div>
+    <button id="logout" class="iconBtn" title="Esci">↪</button>
+  </header>
+
+  <main>
+    <section id="todayView" class="view active">
+      <div id="todayDate" class="dateHero"></div>
+      <div id="todayEvents"></div>
+      <button class="primary big" data-go="newView">＋ Nuovo evento</button>
+    </section>
+
+    <section id="calendarView" class="view">
+      <div class="monthBar">
+        <button id="prevMonth" class="iconBtn">‹</button>
+        <h2 id="monthLabel"></h2>
+        <button id="nextMonth" class="iconBtn">›</button>
+      </div>
+      <div class="weekdays"><span>L</span><span>M</span><span>M</span><span>G</span><span>V</span><span>S</span><span>D</span></div>
+      <div id="calendarGrid" class="calendar"></div>
+      <div id="dayDetail" class="dayDetail"></div>
+    </section>
+
+    <section id="searchView" class="view">
+      <div class="panel">
+        <label>Persona<select id="searchPerson"></select></label>
+        <div class="two">
+          <label>Dal<input id="searchFrom" type="date"></label>
+          <label>Al<input id="searchTo" type="date"></label>
+        </div>
+        <div class="hint">Di default mostriamo i prossimi 7 giorni.</div>
+        <button id="searchBtn" class="primary">Mostra impegni</button>
+      </div>
+      <div id="searchSummary" class="sectionTitle"></div>
+      <div id="searchResults"></div>
+    </section>
+
+    <section id="newView" class="view">
+      <form id="eventForm" class="panel">
+        <input id="editEventId" type="hidden">
+        <label>Persona<select id="eventPerson" required></select></label>
+        <label>Data<input id="eventDate" type="date" required></label>
+        <label class="check"><input id="allDay" type="checkbox"> Tutto il giorno</label>
+        <div id="timeFields" class="two">
+          <label>Dalle<input id="startTime" type="time"></label>
+          <label>Alle<input id="endTime" type="time"></label>
+        </div>
+        <label>Motivazione<select id="eventMotivation" required></select></label>
+        <label id="customMotivationWrap" class="hidden">Scrivi motivazione<input id="customMotivation" maxlength="120"></label>
+        <label>Nota <span class="optional">(facoltativa)</span><textarea id="eventNote" rows="3" maxlength="1000"></textarea></label>
+        <label>Ripetizione
+          <select id="recurrence">
+            <option value="none">Non ripetere</option>
+            <option value="weekly">Ogni settimana</option>
+            <option value="yearly">Ogni anno</option>
+          </select>
+        </label>
+        <label id="untilWrap" class="hidden">Ripeti fino al <span class="optional">(facoltativo)</span><input id="recurrenceUntil" type="date"></label>
+        <button class="primary" type="submit">Salva evento</button>
+        <button id="cancelEdit" class="secondary hidden" type="button">Annulla modifica</button>
+      </form>
+    </section>
+
+    <section id="manageView" class="view">
+      <div class="tabs">
+        <button class="tab active" data-tab="peoplePane">Persone</button>
+        <button class="tab" data-tab="motivationsPane">Motivazioni</button>
+      </div>
+      <div id="peoplePane" class="pane active">
+        <form id="personForm" class="panel compact">
+          <label>Nome<input id="personName" maxlength="60" required placeholder="Es. Fabio"></label>
+          <label>Colore<input id="personColor" type="color" value="#e4572e"></label>
+          <button class="primary" type="submit">Aggiungi persona</button>
+        </form>
+        <div class="hint">Puoi gestire fino a 5 persone.</div>
+        <div id="peopleList"></div>
+      </div>
+      <div id="motivationsPane" class="pane">
+        <form id="motivationForm" class="panel compact">
+          <label>Motivazione<input id="motivationName" maxlength="80" required placeholder="Es. Acquisto mangime"></label>
+          <button class="primary" type="submit">Aggiungi motivazione</button>
+        </form>
+        <div class="hint">Salva fino a 20 motivazioni frequenti. “Altro” è sempre disponibile.</div>
+        <div id="motivationsList"></div>
+      </div>
+    </section>
+  </main>
+
+  <nav>
+    <button class="navBtn active" data-go="todayView"><span>●</span>Oggi</button>
+    <button class="navBtn" data-go="calendarView"><span>▦</span>Calendario</button>
+    <button class="navBtn add" data-go="newView"><span>＋</span>Nuovo</button>
+    <button class="navBtn" data-go="searchView"><span>⌕</span>Impegni</button>
+    <button class="navBtn" data-go="manageView"><span>⚙</span>Gestisci</button>
+  </nav>
+</div>
+
+<div id="modal" class="modal hidden"><div class="modalCard"><h3 id="modalTitle"></h3><div id="modalBody"></div><div id="modalActions"></div></div></div>
+<div id="toast" class="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="app.js?v=1"></script>
+</body>
+</html>
