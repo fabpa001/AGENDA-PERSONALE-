@@ -3,7 +3,7 @@ const SUPABASE_KEY='sb_publishable__w5Sx3YaFuMwZKy7fINegQ_iROassGS';
 const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
-let people=[], motivations=[], events=[], exceptions=[];
+let people=[], motivations=[], events=[], exceptions=[], closures=[];
 let monthCursor=monthStart(todayISO()), selectedDay=todayISO();
 
 function pad(n){return String(n).padStart(2,'0')}
@@ -23,6 +23,12 @@ function motivation(e){if(e.custom_motivation)return e.custom_motivation;return 
 function timeLabel(e){return e.all_day?'Tutto il giorno':(e.start_time?.slice(0,5)+'–'+e.end_time?.slice(0,5))}
 function repeatLabel(e){return e.recurrence_type==='weekly'?'↻ Ogni settimana':e.recurrence_type==='yearly'?'↻ Ogni anno':''}
 
+function easterSunday(year){const a=year%19,b=Math.floor(year/100),c=year%100,d=Math.floor(b/4),e=b%4,f=Math.floor((b+8)/25),g=Math.floor((b-f+1)/3),h=(19*a+b-d-g+15)%30,i=Math.floor(c/4),k=c%4,l=(32+2*e+2*i-h-k)%7,m=Math.floor((a+11*h+22*l)/451),month=Math.floor((h+l-7*m+114)/31),day=((h+l-7*m+114)%31)+1;return year+'-'+pad(month)+'-'+pad(day)}
+function isNationalHoliday(date){const p=parts(date),md=pad(p.m)+'-'+pad(p.d);const fixed=['01-01','01-06','04-25','05-01','06-02','08-15','11-01','12-08','12-25','12-26'];if(p.y>=2026)fixed.push('10-04');return fixed.includes(md)||date===addDays(easterSunday(p.y),1)}
+function isSunday(date){return utcDate(date).getUTCDay()===0}
+function closureFor(date){return closures.find(c=>date>=c.start_date&&date<=c.end_date)}
+function isClosedRecurring(e,date){return e.recurrence_type!=='none'&&!!closureFor(date)}
+
 async function init(){
   const {data:{session}}=await sb.auth.getSession();
   if(session)showApp(); else showAuth();
@@ -37,15 +43,16 @@ async function showApp(){
   await loadAll();go('todayView');
 }
 async function loadAll(){
-  const [p,m,e,x]=await Promise.all([
+  const [p,m,e,x,c]=await Promise.all([
     sb.from('people').select('*').order('sort_order').order('created_at'),
     sb.from('motivations').select('*').eq('active',true).order('sort_order').order('created_at'),
     sb.from('events').select('*').order('event_date'),
-    sb.from('event_exceptions').select('*')
+    sb.from('event_exceptions').select('*'),
+    sb.from('closure_periods').select('*').order('start_date')
   ]);
-  const err=p.error||m.error||e.error||x.error;if(err){toast('Errore: '+err.message);return}
-  people=p.data||[];motivations=m.data||[];events=e.data||[];exceptions=x.data||[];
-  fillSelects();renderToday();renderCalendar();renderPeople();renderMotivations();renderSearch();
+  const err=p.error||m.error||e.error||x.error||c.error;if(err){toast('Errore: '+err.message);return}
+  people=p.data||[];motivations=m.data||[];events=e.data||[];exceptions=x.data||[];closures=c.data||[];
+  fillSelects();renderToday();renderCalendar();renderPeople();renderMotivations();renderClosures();renderSearch();
 }
 function fillSelects(){
   const po=people.length?people.map(p=>'<option value="'+p.id+'">'+esc(p.name)+'</option>').join(''):'<option value="">Prima aggiungi una persona</option>';
@@ -56,6 +63,7 @@ function occursOn(e,date){
   if(date<e.event_date)return false;
   if(e.recurrence_until&&date>e.recurrence_until)return false;
   if(exceptions.some(x=>x.event_id===e.id&&x.occurrence_date===date))return false;
+  if(isClosedRecurring(e,date))return false;
   if(e.recurrence_type==='none')return date===e.event_date;
   if(e.recurrence_type==='weekly'){
     const diff=Math.round((utcDate(date)-utcDate(e.event_date))/86400000);
@@ -96,9 +104,9 @@ function renderCalendar(){
   const occ=occurrences(start,end), by={};occ.forEach(e=>(by[e.occurrence_date]??=[]).push(e));
   let html='';
   for(let d=start;d<=end;d=addDays(d,1)){
-    const outside=d.slice(0,7)!==monthCursor.slice(0,7), isToday=d===todayISO(), sel=d===selectedDay;
+    const outside=d.slice(0,7)!==monthCursor.slice(0,7), isToday=d===todayISO(), sel=d===selectedDay, festive=isSunday(d)||isNationalHoliday(d);
     const dots=(by[d]||[]).map(e=>'<i class="dot" style="--dot:'+esc(person(e.person_id)?.color||'#888')+'"></i>').join('');
-    html+='<button class="day '+(outside?'out ':'')+(isToday?'today ':'')+(sel?'selected':'')+'" data-date="'+d+'"><span class="dayNum">'+parts(d).d+'</span><span class="dots">'+dots+'</span></button>';
+    html+='<button class="day '+(outside?'out ':'')+(isToday?'today ':'')+(sel?'selected ':'')+(festive?'festive':'')+'" data-date="'+d+'"><span class="dayNum">'+parts(d).d+'</span><span class="dots">'+dots+'</span></button>';
   }
   $('#calendarGrid').innerHTML=html;
   $$('#calendarGrid .day').forEach(b=>b.addEventListener('click',()=>{selectedDay=b.dataset.date;renderCalendar();renderDayDetail()}));
@@ -124,6 +132,11 @@ function renderPeople(){
   $('#peopleList').innerHTML=people.map(p=>'<div class="manageRow"><div class="personLabel"><i class="colorDot" style="--c:'+esc(p.color)+'"></i>'+esc(p.name)+'</div><button class="smallBtn removePerson" data-id="'+p.id+'">Elimina</button></div>').join('')||'<div class="empty">Nessuna persona ancora.</div>';
   $$('.removePerson').forEach(b=>b.addEventListener('click',()=>removePerson(b.dataset.id)));
 }
+function renderClosures(){
+  $('#closuresList').innerHTML=closures.map(c=>'<div class="manageRow"><div><strong>'+esc(c.name)+'</strong><div class="hint closureDates">'+esc(fmtDate(c.start_date,{day:'numeric',month:'short',year:'numeric'}))+' – '+esc(fmtDate(c.end_date,{day:'numeric',month:'short',year:'numeric'}))+'</div></div><button class="smallBtn removeClosure" data-id="'+c.id+'">Elimina</button></div>').join('')||'<div class="empty">Nessun periodo di chiusura.</div>';
+  $('.removeClosure').forEach(b=>b.addEventListener('click',()=>removeClosure(b.dataset.id)));
+}
+async function removeClosure(id){modal('Eliminare questo periodo di chiusura?','Le ricorrenze torneranno visibili nelle date interessate.',[{label:'Elimina',className:'danger',run:async()=>{const {error}=await sb.from('closure_periods').delete().eq('id',id);if(error)toast(error.message);else{toast('Chiusura eliminata');await loadAll()}}},{label:'Annulla'}])}
 function renderMotivations(){
   $('#motivationsList').innerHTML=motivations.map(m=>'<div class="manageRow"><strong>'+esc(m.name)+'</strong><button class="smallBtn removeMotivation" data-id="'+m.id+'">Elimina</button></div>').join('')||'<div class="empty">Nessuna motivazione salvata.</div>';
   $$('.removeMotivation').forEach(b=>b.addEventListener('click',()=>removeMotivation(b.dataset.id)));
@@ -184,6 +197,7 @@ $('#eventForm').addEventListener('submit',async e=>{
   if(error)toast('Errore: '+error.message);else{toast(id?'Evento aggiornato':'Evento salvato');resetEventForm();await loadAll();go('todayView')}
 });
 $('#personForm').addEventListener('submit',async e=>{e.preventDefault();const {error}=await sb.from('people').insert({name:$('#personName').value.trim(),color:$('#personColor').value});if(error)toast(error.message);else{$('#personForm').reset();$('#personColor').value='#e4572e';toast('Persona aggiunta');await loadAll()}});
+$('#closureForm').addEventListener('submit',async e=>{e.preventDefault();const start=$('#closureFrom').value,end=$('#closureTo').value;if(end<start){toast('La data finale deve essere successiva');return}const {error}=await sb.from('closure_periods').insert({name:$('#closureName').value.trim(),start_date:start,end_date:end});if(error)toast(error.message);else{$('#closureForm').reset();toast('Periodo di chiusura aggiunto');await loadAll()}});
 $('#motivationForm').addEventListener('submit',async e=>{e.preventDefault();const {error}=await sb.from('motivations').insert({name:$('#motivationName').value.trim()});if(error)toast(error.message);else{$('#motivationForm').reset();toast('Motivazione aggiunta');await loadAll()}});
 $$('.tab').forEach(b=>b.addEventListener('click',()=>{$$('.tab').forEach(x=>x.classList.toggle('active',x===b));$$('.pane').forEach(p=>p.classList.toggle('active',p.id===b.dataset.tab))}));
 $('#modal').addEventListener('click',e=>{if(e.target===$('#modal'))closeModal()});
