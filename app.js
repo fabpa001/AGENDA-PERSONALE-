@@ -130,7 +130,8 @@ function renderSearch(){
 }
 function renderPeople(){
   $('#peopleList').innerHTML=people.map(p=>'<div class="manageRow"><div class="personLabel"><i class="colorDot" style="--c:'+esc(p.color)+'"></i>'+esc(p.name)+'</div><button class="smallBtn removePerson" data-id="'+p.id+'">Elimina</button></div>').join('')||'<div class="empty">Nessuna persona ancora.</div>';
-  $$('.removePerson').forEach(b=>b.addEventListener('click',()=>removePerson(b.dataset.id)));
+  $('.editPerson').forEach(b=>b.addEventListener('click',()=>editPerson(b.dataset.id)));
+  $('.removePerson').forEach(b=>b.addEventListener('click',()=>removePerson(b.dataset.id)));
 }
 function renderClosures(){
   $('#closuresList').innerHTML=closures.map(c=>'<div class="manageRow"><div><strong>'+esc(c.name)+'</strong><div class="hint closureDates">'+esc(fmtDate(c.start_date,{day:'numeric',month:'short',year:'numeric'}))+' – '+esc(fmtDate(c.end_date,{day:'numeric',month:'short',year:'numeric'}))+'</div></div><button class="smallBtn removeClosure" data-id="'+c.id+'">Elimina</button></div>').join('')||'<div class="empty">Nessun periodo di chiusura.</div>';
@@ -172,6 +173,13 @@ function askDelete(id,date){
 }
 async function deleteOccurrence(id,date){const {error}=await sb.from('event_exceptions').insert({event_id:id,occurrence_date:date});if(error)toast(error.message);else{toast('Data cancellata');await loadAll()}}
 async function deleteWhole(id){const {error}=await sb.from('events').delete().eq('id',id);if(error)toast(error.message);else{toast('Evento cancellato');await loadAll()}}
+function editPerson(id){
+  const p=person(id);if(!p)return;
+  modal('Modifica persona','<label>Nome<input id="modalPersonName" maxlength="60" value="'+esc(p.name)+'"></label><label>Colore<input id="modalPersonColor" type="color" value="'+esc(p.color)+'"></label>',[
+    {label:'Salva',className:'primary',run:async()=>{const name=$('#modalPersonName')?.value.trim(),color=$('#modalPersonColor')?.value;if(!name)return;const {error}=await sb.from('people').update({name,color}).eq('id',id);if(error)toast(error.message);else{toast('Persona aggiornata');await loadAll()}}},
+    {label:'Annulla'}
+  ])
+}
 async function removePerson(id){modal('Eliminare questa persona?','Se ha eventi associati, prima dovrai eliminare quegli eventi.',[{label:'Elimina',className:'danger',run:async()=>{const {error}=await sb.from('people').delete().eq('id',id);if(error)toast('Non posso eliminarla: ci sono eventi associati.');else{toast('Persona eliminata');await loadAll()}}},{label:'Annulla'}])}
 async function removeMotivation(id){modal('Eliminare questa motivazione?','Gli eventi già salvati resteranno in agenda.',[{label:'Elimina',className:'danger',run:async()=>{const {error}=await sb.from('motivations').delete().eq('id',id);if(error)toast(error.message);else{toast('Motivazione eliminata');await loadAll()}}},{label:'Annulla'}])}
 
