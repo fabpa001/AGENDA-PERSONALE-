@@ -161,7 +161,7 @@ function editEvent(id){
   $('#eventNote').value=e.note||'';$('#recurrence').value=e.recurrence_type;$('#recurrenceUntil').value=e.recurrence_until||'';
   $('#untilWrap').classList.toggle('hidden',e.recurrence_type==='none');$('#timeFields').classList.toggle('hidden',e.all_day);$('#cancelEdit').classList.remove('hidden');
 }
-function modal(title,body,actions){$('#modalTitle').textContent=title;$('#modalBody').innerHTML=body;$('#modalActions').innerHTML='';actions.forEach(a=>{const b=document.createElement('button');b.className=a.className||'secondary';b.textContent=a.label;b.addEventListener('click',async()=>{if(a.run)await a.run();closeModal()});$('#modalActions').appendChild(b)});$('#modal').classList.remove('hidden')}
+function modal(title,body,actions){$('#modalTitle').textContent=title;$('#modalBody').innerHTML=body;$('#modalActions').innerHTML='';actions.forEach(a=>{const b=document.createElement('button');b.className=a.className||'secondary';b.textContent=a.label;b.addEventListener('click',async()=>{const shouldClose=a.run?await a.run():true;if(shouldClose!==false)closeModal()});$('#modalActions').appendChild(b)});$('#modal').classList.remove('hidden')}
 function closeModal(){$('#modal').classList.add('hidden')}
 function askDelete(id,date){
   const e=events.find(x=>x.id===id);if(!e)return;
@@ -175,10 +175,11 @@ async function deleteOccurrence(id,date){const {error}=await sb.from('event_exce
 async function deleteWhole(id){const {error}=await sb.from('events').delete().eq('id',id);if(error)toast(error.message);else{toast('Evento cancellato');await loadAll()}}
 function editPerson(id){
   const p=person(id);if(!p)return;
-  modal('Modifica persona','<label>Nome<input id="modalPersonName" maxlength="60" value="'+esc(p.name)+'"></label><label>Colore<input id="modalPersonColor" type="color" value="'+esc(p.color)+'"></label>',[
-    {label:'Salva',className:'primary',run:async()=>{const name=$('#modalPersonName')?.value.trim(),color=$('#modalPersonColor')?.value;if(!name)return;const {error}=await sb.from('people').update({name,color}).eq('id',id);if(error)toast(error.message);else{toast('Persona aggiornata');await loadAll()}}},
+  modal('Modifica persona','<label>Nome<input id="modalPersonName" maxlength="60" value="'+esc(p.name)+'"></label><label>Colore<select id="modalPersonColor"><option value="#e53935">Rosso</option><option value="#fb8c00">Arancione</option><option value="#fdd835">Giallo</option><option value="#43a047">Verde</option><option value="#1e88e5">Blu</option><option value="#8e24aa">Viola</option><option value="#ec407a">Rosa</option><option value="#6d4c41">Marrone</option><option value="#546e7a">Grigio</option></select></label>',[
+    {label:'Salva',className:'primary',run:async()=>{const name=$('#modalPersonName').value.trim(),color=$('#modalPersonColor').value;if(!name){toast('Inserisci il nome');return false}const {error}=await sb.from('people').update({name,color}).eq('id',id);if(error){toast(error.message);return false}toast('Persona aggiornata');await loadAll();return true}},
     {label:'Annulla'}
-  ])
+  ]);
+  const sel=$('#modalPersonColor');if(sel){const match=[...sel.options].find(o=>o.value.toLowerCase()===String(p.color).toLowerCase());if(match)sel.value=match.value}
 }
 async function removePerson(id){modal('Eliminare questa persona?','Se ha eventi associati, prima dovrai eliminare quegli eventi.',[{label:'Elimina',className:'danger',run:async()=>{const {error}=await sb.from('people').delete().eq('id',id);if(error)toast('Non posso eliminarla: ci sono eventi associati.');else{toast('Persona eliminata');await loadAll()}}},{label:'Annulla'}])}
 async function removeMotivation(id){modal('Eliminare questa motivazione?','Gli eventi già salvati resteranno in agenda.',[{label:'Elimina',className:'danger',run:async()=>{const {error}=await sb.from('motivations').delete().eq('id',id);if(error)toast(error.message);else{toast('Motivazione eliminata');await loadAll()}}},{label:'Annulla'}])}
