@@ -129,7 +129,7 @@ function renderSearch(){
   $('#searchResults').innerHTML=html||'<div class="empty">Nessun impegno nel periodo scelto.</div>';bindEventButtons($('#searchResults'));
 }
 function renderPeople(){
-  $('#peopleList').innerHTML=people.map(p=>'<div class="manageRow"><div class="personLabel"><i class="colorDot" style="--c:'+esc(p.color)+'"></i>'+esc(p.name)+'</div><button class="smallBtn removePerson" data-id="'+p.id+'">Elimina</button></div>').join('')||'<div class="empty">Nessuna persona ancora.</div>';
+  $('#peopleList').innerHTML=people.map(p=>'<div class="manageRow"><div class="personLabel"><i class="colorDot" style="--c:'+esc(p.color)+'"></i>'+esc(p.name)+'</div><div class="smallActions"><button class="smallBtn editPerson" data-id="'+p.id+'">Modifica</button><button class="smallBtn removePerson" data-id="'+p.id+'">Elimina</button></div></div>').join('')||'<div class="empty">Nessuna persona ancora.</div>';
   $('.editPerson').forEach(b=>b.addEventListener('click',()=>editPerson(b.dataset.id)));
   $('.removePerson').forEach(b=>b.addEventListener('click',()=>removePerson(b.dataset.id)));
 }
