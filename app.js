@@ -133,7 +133,7 @@ function renderPeople(){
 }
 function renderClosures(){
   $('#closuresList').innerHTML=closures.map(c=>'<div class="manageRow"><div><strong>'+esc(c.name)+'</strong><div class="hint closureDates">'+esc(fmtDate(c.start_date,{day:'numeric',month:'short',year:'numeric'}))+' – '+esc(fmtDate(c.end_date,{day:'numeric',month:'short',year:'numeric'}))+'</div></div><button class="smallBtn removeClosure" data-id="'+c.id+'">Elimina</button></div>').join('')||'<div class="empty">Nessun periodo di chiusura.</div>';
-  $('.removeClosure').forEach(b=>b.addEventListener('click',()=>removeClosure(b.dataset.id)));
+
 }
 async function removeClosure(id){modal('Eliminare questo periodo di chiusura?','Le ricorrenze torneranno visibili nelle date interessate.',[{label:'Elimina',className:'danger',run:async()=>{const {error}=await sb.from('closure_periods').delete().eq('id',id);if(error)toast(error.message);else{toast('Chiusura eliminata');await loadAll()}}},{label:'Annulla'}])}
 function renderMotivations(){
@@ -208,5 +208,6 @@ $('#closureForm').addEventListener('submit',async e=>{e.preventDefault();const s
 $('#motivationForm').addEventListener('submit',async e=>{e.preventDefault();const {error}=await sb.from('motivations').insert({name:$('#motivationName').value.trim()});if(error)toast(error.message);else{$('#motivationForm').reset();toast('Motivazione aggiunta');await loadAll()}});
 $$('.tab').forEach(b=>b.addEventListener('click',()=>{$$('.tab').forEach(x=>x.classList.toggle('active',x===b));$$('.pane').forEach(p=>p.classList.toggle('active',p.id===b.dataset.tab))}));
 $('#peopleList').addEventListener('click',e=>{const edit=e.target.closest('.editPerson'),remove=e.target.closest('.removePerson');if(edit){e.preventDefault();editPerson(edit.dataset.id)}else if(remove){e.preventDefault();removePerson(remove.dataset.id)}});
+$('#closuresList').addEventListener('click',e=>{const remove=e.target.closest('.removeClosure');if(remove){e.preventDefault();removeClosure(remove.dataset.id)}});
 $('#modal').addEventListener('click',e=>{if(e.target===$('#modal'))closeModal()});
 init();
