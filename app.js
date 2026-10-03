@@ -161,7 +161,7 @@ function editEvent(id){
   $('#eventNote').value=e.note||'';$('#recurrence').value=e.recurrence_type;$('#recurrenceUntil').value=e.recurrence_until||'';
   $('#untilWrap').classList.toggle('hidden',e.recurrence_type==='none');$('#timeFields').classList.toggle('hidden',e.all_day);$('#cancelEdit').classList.remove('hidden');
 }
-function modal(title,body,actions){$('#modalTitle').textContent=title;$('#modalBody').innerHTML=body;$('#modalActions').innerHTML='';actions.forEach(a=>{const b=document.createElement('button');b.className=a.className||'secondary';b.textContent=a.label;b.addEventListener('click',()=>{closeModal();a.run&&a.run()});$('#modalActions').appendChild(b)});$('#modal').classList.remove('hidden')}
+function modal(title,body,actions){$('#modalTitle').textContent=title;$('#modalBody').innerHTML=body;$('#modalActions').innerHTML='';actions.forEach(a=>{const b=document.createElement('button');b.className=a.className||'secondary';b.textContent=a.label;b.addEventListener('click',async()=>{if(a.run)await a.run();closeModal()});$('#modalActions').appendChild(b)});$('#modal').classList.remove('hidden')}
 function closeModal(){$('#modal').classList.add('hidden')}
 function askDelete(id,date){
   const e=events.find(x=>x.id===id);if(!e)return;
