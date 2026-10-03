@@ -129,9 +129,7 @@ function renderSearch(){
   $('#searchResults').innerHTML=html||'<div class="empty">Nessun impegno nel periodo scelto.</div>';bindEventButtons($('#searchResults'));
 }
 function renderPeople(){
-  $('#peopleList').innerHTML=people.map(p=>'<div class="manageRow"><div class="personLabel"><i class="colorDot" style="--c:'+esc(p.color)+'"></i>'+esc(p.name)+'</div><div class="smallActions"><button class="smallBtn editPerson" data-id="'+p.id+'">Modifica</button><button class="smallBtn removePerson" data-id="'+p.id+'">Elimina</button></div></div>').join('')||'<div class="empty">Nessuna persona ancora.</div>';
-  $('.editPerson').forEach(b=>b.addEventListener('click',()=>editPerson(b.dataset.id)));
-  $('.removePerson').forEach(b=>b.addEventListener('click',()=>removePerson(b.dataset.id)));
+  $('#peopleList').innerHTML=people.map(p=>'<div class="manageRow"><div class="personLabel"><i class="colorDot" style="--c:'+esc(p.color)+'"></i>'+esc(p.name)+'</div><div class="smallActions"><button class="smallBtn editPerson" type="button" data-id="'+p.id+'">Modifica</button><button class="smallBtn removePerson" type="button" data-id="'+p.id+'">Elimina</button></div></div>').join('')||'<div class="empty">Nessuna persona ancora.</div>';
 }
 function renderClosures(){
   $('#closuresList').innerHTML=closures.map(c=>'<div class="manageRow"><div><strong>'+esc(c.name)+'</strong><div class="hint closureDates">'+esc(fmtDate(c.start_date,{day:'numeric',month:'short',year:'numeric'}))+' – '+esc(fmtDate(c.end_date,{day:'numeric',month:'short',year:'numeric'}))+'</div></div><button class="smallBtn removeClosure" data-id="'+c.id+'">Elimina</button></div>').join('')||'<div class="empty">Nessun periodo di chiusura.</div>';
@@ -209,5 +207,6 @@ $('#personForm').addEventListener('submit',async e=>{e.preventDefault();const {e
 $('#closureForm').addEventListener('submit',async e=>{e.preventDefault();const start=$('#closureFrom').value,end=$('#closureTo').value;if(end<start){toast('La data finale deve essere successiva');return}const {error}=await sb.from('closure_periods').insert({name:$('#closureName').value.trim(),start_date:start,end_date:end});if(error)toast(error.message);else{$('#closureForm').reset();toast('Periodo di chiusura aggiunto');await loadAll()}});
 $('#motivationForm').addEventListener('submit',async e=>{e.preventDefault();const {error}=await sb.from('motivations').insert({name:$('#motivationName').value.trim()});if(error)toast(error.message);else{$('#motivationForm').reset();toast('Motivazione aggiunta');await loadAll()}});
 $$('.tab').forEach(b=>b.addEventListener('click',()=>{$$('.tab').forEach(x=>x.classList.toggle('active',x===b));$$('.pane').forEach(p=>p.classList.toggle('active',p.id===b.dataset.tab))}));
+$('#peopleList').addEventListener('click',e=>{const edit=e.target.closest('.editPerson'),remove=e.target.closest('.removePerson');if(edit){e.preventDefault();editPerson(edit.dataset.id)}else if(remove){e.preventDefault();removePerson(remove.dataset.id)}});
 $('#modal').addEventListener('click',e=>{if(e.target===$('#modal'))closeModal()});
 init();
